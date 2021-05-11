@@ -28,13 +28,16 @@ include = [
 ]
 
 [features]
-default = ["boringssl-vendored"]
+default = ["boringssl-vendored", "certificate-compression"]
 
 # Build the vendored BoringSSL library.
 boringssl-vendored = []
 
 # Use the BoringSSL library provided by the boring crate.
 boringssl-boring-crate = ["boring", "foreign-types-shared"]
+
+# Enable certificate compression.
+certificate-compression = ["pkg-config"]
 
 # Generate pkg-config metadata file for libquiche.
 pkg-config-meta = []
@@ -52,6 +55,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [build-dependencies]
 cmake = "0.1"
+pkg-config = { version = "0.3", optional = true }
 
 [dependencies]
 log = { version = "0.4", features = ["std"] }
