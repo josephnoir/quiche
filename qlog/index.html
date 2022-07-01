@@ -1,0 +1,239 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The qlog crate is an implementation of the qlog main logging schema, QUIC event definitions, and HTTP/3 and QPACK event definitions. The crate provides a qlog data model that can be used for traces with events. It supports serialization and deserialization but defers logging IO choices to applications."><meta name="keywords" content="rust, rustlang, rust-lang, qlog"><title>qlog - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script defer src="../crates.js"></script><script defer src="../main.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../qlog/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../qlog/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate qlog</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 0.7.0</li><li><a id="all-types" href="all.html">All Items</a></li></ul></div><section><div class="block"><ul><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#constants">Constants</a></li><li><a href="#types">Type Definitions</a></li></ul></div></section></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../qlog/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
+                                <a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div>
+                        </div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">qlog</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/qlog/lib.rs.html#27-968">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>The qlog crate is an implementation of the qlog <a href="https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-main-schema">main logging schema</a>,
+<a href="https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-quic-events.html">QUIC event definitions</a>, and <a href="https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-h3-events.html">HTTP/3 and QPACK event definitions</a>.
+The crate provides a qlog data model that can be used for traces with
+events. It supports serialization and deserialization but defers logging IO
+choices to applications.</p>
+<p>Serialization operates in either a <a href="#buffered-traces-with-standard-json">buffered mode</a> or a <a href="#streaming-traces-with-json-seq">streaming mode</a>.</p>
+<p>The crate uses Serde for conversion between Rust and JSON.</p>
+<h3 id="overview"><a href="#overview">Overview</a></h3>
+<p>qlog is a hierarchical logging format, with a rough structure of:</p>
+<ul>
+<li>Log
+<ul>
+<li>Trace(s)
+<ul>
+<li>Event(s)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>In practice, a single QUIC connection maps to a single Trace file with one
+or more Events. Applications can decide whether to combine Traces from
+different connections into the same Log.</p>
+<h3 id="buffered-traces-with-standard-json"><a href="#buffered-traces-with-standard-json">Buffered Traces with standard JSON</a></h3>
+<p>A <a href="struct.Trace.html"><code>Trace</code></a> is a single JSON object. It contains metadata such as the
+<a href="struct.VantagePoint.html"><code>VantagePoint</code></a> of capture and the <a href="struct.Configuration.html"><code>Configuration</code></a>, and protocol event
+data in the <a href="events/struct.Event.html" title="Event"><code>Event</code></a> array.</p>
+<p>JSON Traces allow applications to appends events to them before eventually
+being serialized as a complete JSON object.</p>
+<h4 id="creating-a-trace"><a href="#creating-a-trace">Creating a Trace</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">trace</span> <span class="op">=</span> <span class="ident">qlog::Trace::new</span>(
+    <span class="ident">qlog::VantagePoint</span> {
+        <span class="ident">name</span>: <span class="prelude-val">Some</span>(<span class="string">&quot;Example client&quot;</span>.<span class="ident">to_string</span>()),
+        <span class="ident">ty</span>: <span class="ident">qlog::VantagePointType::Client</span>,
+        <span class="ident">flow</span>: <span class="prelude-val">None</span>,
+    },
+    <span class="prelude-val">Some</span>(<span class="string">&quot;Example qlog trace&quot;</span>.<span class="ident">to_string</span>()),
+    <span class="prelude-val">Some</span>(<span class="string">&quot;Example qlog trace description&quot;</span>.<span class="ident">to_string</span>()),
+    <span class="prelude-val">Some</span>(<span class="ident">qlog::Configuration</span> {
+        <span class="ident">time_offset</span>: <span class="prelude-val">Some</span>(<span class="number">0.0</span>),
+        <span class="ident">original_uris</span>: <span class="prelude-val">None</span>,
+    }),
+    <span class="prelude-val">None</span>,
+);</code></pre></div>
+<h4 id="adding-events-to-a-trace"><a href="#adding-events-to-a-trace">Adding events to a Trace</a></h4>
+<p>Qlog <a href="events/struct.Event.html" title="Event"><code>Event</code></a> objects are added to <a href="struct.Trace.html#structfield.events"><code>qlog::Trace.events</code></a>.</p>
+<p>The following example demonstrates how to log a qlog QUIC <code>packet_sent</code>
+event containing a single Crypto frame. It constructs the necessary elements
+of the <a href="events/struct.Event.html" title="Event"><code>Event</code></a>, then appends it to the trace with <a href="struct.Trace.html#method.push_event"><code>push_event()</code></a>.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>
+<span class="kw">let</span> <span class="ident">scid</span> <span class="op">=</span> [<span class="number">0x7e</span>, <span class="number">0x37</span>, <span class="number">0xe4</span>, <span class="number">0xdc</span>, <span class="number">0xc6</span>, <span class="number">0x68</span>, <span class="number">0x2d</span>, <span class="number">0xa8</span>];
+<span class="kw">let</span> <span class="ident">dcid</span> <span class="op">=</span> [<span class="number">0x36</span>, <span class="number">0xce</span>, <span class="number">0x10</span>, <span class="number">0x4e</span>, <span class="number">0xee</span>, <span class="number">0x50</span>, <span class="number">0x10</span>, <span class="number">0x1c</span>];
+
+<span class="kw">let</span> <span class="ident">pkt_hdr</span> <span class="op">=</span> <span class="ident">qlog::events::quic::PacketHeader::new</span>(
+    <span class="ident">qlog::events::quic::PacketType::Initial</span>,
+    <span class="number">0</span>,                <span class="comment">// packet_number</span>
+    <span class="prelude-val">None</span>,             <span class="comment">// flags</span>
+    <span class="prelude-val">None</span>,             <span class="comment">// token</span>
+    <span class="prelude-val">None</span>,             <span class="comment">// length</span>
+    <span class="prelude-val">Some</span>(<span class="number">0x00000001</span>), <span class="comment">// version</span>
+    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">scid</span>),
+    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">dcid</span>),
+);
+
+<span class="kw">let</span> <span class="ident">frames</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="ident">qlog::events::quic::QuicFrame::Crypto</span> {
+    <span class="ident">offset</span>: <span class="number">0</span>,
+    <span class="ident">length</span>: <span class="number">0</span>,
+}];
+
+<span class="kw">let</span> <span class="ident">raw</span> <span class="op">=</span> <span class="ident">qlog::events::RawInfo</span> {
+    <span class="ident">length</span>: <span class="prelude-val">Some</span>(<span class="number">1251</span>),
+    <span class="ident">payload_length</span>: <span class="prelude-val">Some</span>(<span class="number">1224</span>),
+    <span class="ident">data</span>: <span class="prelude-val">None</span>,
+};
+
+<span class="kw">let</span> <span class="ident">event_data</span> <span class="op">=</span>
+    <span class="ident">qlog::events::EventData::PacketSent</span>(<span class="ident">qlog::events::quic::PacketSent</span> {
+        <span class="ident">header</span>: <span class="ident">pkt_hdr</span>,
+        <span class="ident">frames</span>: <span class="prelude-val">Some</span>(<span class="ident">frames</span>),
+        <span class="ident">is_coalesced</span>: <span class="prelude-val">None</span>,
+        <span class="ident">retry_token</span>: <span class="prelude-val">None</span>,
+        <span class="ident">stateless_reset_token</span>: <span class="prelude-val">None</span>,
+        <span class="ident">supported_versions</span>: <span class="prelude-val">None</span>,
+        <span class="ident">raw</span>: <span class="prelude-val">Some</span>(<span class="ident">raw</span>),
+        <span class="ident">datagram_id</span>: <span class="prelude-val">None</span>,
+        <span class="ident">trigger</span>: <span class="prelude-val">None</span>,
+    });
+
+<span class="ident">trace</span>.<span class="ident">push_event</span>(<span class="ident">qlog::events::Event::with_time</span>(<span class="number">0.0</span>, <span class="ident">event_data</span>));</code></pre></div>
+<h4 id="serializing"><a href="#serializing">Serializing</a></h4>
+<p>The qlog crate has only been tested with <code>serde_json</code>, however
+other serializer targets might work.</p>
+<p>For example, serializing the trace created above:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="ident">serde_json::to_string_pretty</span>(<span class="kw-2">&amp;</span><span class="ident">trace</span>).<span class="ident">unwrap</span>();</code></pre></div>
+<p>which would generate the following:</p>
+
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code>{
+  <span class="string">&quot;vantage_point&quot;</span>: {
+    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;Example client&quot;</span>,
+    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;client&quot;</span>
+  },
+  <span class="string">&quot;title&quot;</span>: <span class="string">&quot;Example qlog trace&quot;</span>,
+  <span class="string">&quot;description&quot;</span>: <span class="string">&quot;Example qlog trace description&quot;</span>,
+  <span class="string">&quot;configuration&quot;</span>: {
+    <span class="string">&quot;time_offset&quot;</span>: <span class="number">0.0</span>
+  },
+  <span class="string">&quot;events&quot;</span>: [
+    {
+      <span class="string">&quot;time&quot;</span>: <span class="number">0.0</span>,
+      <span class="string">&quot;name&quot;</span>: <span class="string">&quot;transport:packet_sent&quot;</span>,
+      <span class="string">&quot;data&quot;</span>: {
+        <span class="string">&quot;header&quot;</span>: {
+          <span class="string">&quot;packet_type&quot;</span>: <span class="string">&quot;initial&quot;</span>,
+          <span class="string">&quot;packet_number&quot;</span>: <span class="number">0</span>,
+          <span class="string">&quot;version&quot;</span>: <span class="string">&quot;1&quot;</span>,
+          <span class="string">&quot;scil&quot;</span>: <span class="number">8</span>,
+          <span class="string">&quot;dcil&quot;</span>: <span class="number">8</span>,
+          <span class="string">&quot;scid&quot;</span>: <span class="string">&quot;7e37e4dcc6682da8&quot;</span>,
+          <span class="string">&quot;dcid&quot;</span>: <span class="string">&quot;36ce104eee50101c&quot;</span>
+        },
+        <span class="string">&quot;raw&quot;</span>: {
+          <span class="string">&quot;length&quot;</span>: <span class="number">1251</span>,
+          <span class="string">&quot;payload_length&quot;</span>: <span class="number">1224</span>
+        },
+        <span class="string">&quot;frames&quot;</span>: [
+          {
+            <span class="string">&quot;frame_type&quot;</span>: <span class="string">&quot;crypto&quot;</span>,
+            <span class="string">&quot;offset&quot;</span>: <span class="number">0</span>,
+            <span class="string">&quot;length&quot;</span>: <span class="number">0</span>
+          }
+        ]
+      }
+    }
+  ]
+}</code></pre></div>
+<h3 id="streaming-traces-with-json-seq"><a href="#streaming-traces-with-json-seq">Streaming Traces with JSON-SEQ</a></h3>
+<p>To help support streaming serialization of qlogs,
+draft-ietf-quic-qlog-main-schema-01 introduced support for RFC 7464 JSON
+Text Sequences (JSON-SEQ). The qlog crate supports this format and provides
+utilities that aid streaming.</p>
+<p>A <a href="struct.TraceSeq.html"><code>TraceSeq</code></a> contains metadata such as the <a href="struct.VantagePoint.html"><code>VantagePoint</code></a> of capture and
+the <a href="struct.Configuration.html"><code>Configuration</code></a>. However, protocol event data is handled as separate
+lines containing a record separator character, a serialized <a href="events/struct.Event.html" title="Event"><code>Event</code></a>, and a
+newline.</p>
+<h4 id="creating-a-traceseq"><a href="#creating-a-traceseq">Creating a TraceSeq</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">trace</span> <span class="op">=</span> <span class="ident">qlog::TraceSeq::new</span>(
+    <span class="ident">qlog::VantagePoint</span> {
+        <span class="ident">name</span>: <span class="prelude-val">Some</span>(<span class="string">&quot;Example client&quot;</span>.<span class="ident">to_string</span>()),
+        <span class="ident">ty</span>: <span class="ident">qlog::VantagePointType::Client</span>,
+        <span class="ident">flow</span>: <span class="prelude-val">None</span>,
+    },
+    <span class="prelude-val">Some</span>(<span class="string">&quot;Example qlog trace&quot;</span>.<span class="ident">to_string</span>()),
+    <span class="prelude-val">Some</span>(<span class="string">&quot;Example qlog trace description&quot;</span>.<span class="ident">to_string</span>()),
+    <span class="prelude-val">Some</span>(<span class="ident">qlog::Configuration</span> {
+        <span class="ident">time_offset</span>: <span class="prelude-val">Some</span>(<span class="number">0.0</span>),
+        <span class="ident">original_uris</span>: <span class="prelude-val">None</span>,
+    }),
+    <span class="prelude-val">None</span>,
+);</code></pre></div>
+<p>Create an object with the <a href="https://doc.rust-lang.org/std/io/trait.Write.html"><code>Write</code></a> trait:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">file</span> <span class="op">=</span> <span class="ident">std::fs::File::create</span>(<span class="string">&quot;foo.sqlog&quot;</span>).<span class="ident">unwrap</span>();</code></pre></div>
+<p>Create a <a href="struct.QlogStreamer.html"><code>QlogStreamer</code></a> and start serialization to foo.sqlog
+using <a href="streamer/struct.QlogStreamer.html#method.start_log"><code>start_log()</code></a>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">streamer</span> <span class="op">=</span> <span class="ident">qlog::streamer::QlogStreamer::new</span>(
+    <span class="ident">qlog::QLOG_VERSION</span>.<span class="ident">to_string</span>(),
+    <span class="prelude-val">Some</span>(<span class="string">&quot;Example qlog&quot;</span>.<span class="ident">to_string</span>()),
+    <span class="prelude-val">Some</span>(<span class="string">&quot;Example qlog description&quot;</span>.<span class="ident">to_string</span>()),
+    <span class="prelude-val">None</span>,
+    <span class="ident">std::time::Instant::now</span>(),
+    <span class="ident">trace</span>,
+    <span class="ident">qlog::events::EventImportance::Base</span>,
+    <span class="ident">Box::new</span>(<span class="ident">file</span>),
+);
+
+<span class="ident">streamer</span>.<span class="ident">start_log</span>().<span class="ident">ok</span>();</code></pre></div>
+<h4 id="adding-events"><a href="#adding-events">Adding events</a></h4>
+<p>Once logging has started you can stream events. Events
+are written in one step using one of <a href="streamer/struct.QlogStreamer.html#method.add_event"><code>add_event()</code></a>,
+<a href="streamer/struct.QlogStreamer.html#method.add_event_with_instant"><code>add_event_with_instant()</code></a>, <a href="streamer/struct.QlogStreamer.html#method.add_event_now"><code>add_event_now()</code></a>,
+<a href="streamer/struct.QlogStreamer.html#method.add_event_data_with_instant"><code>add_event_data_with_instant()</code></a>, or <a href="streamer/struct.QlogStreamer.html#method.add_event_data_now"><code>add_event_data_now()</code></a> :</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>
+<span class="kw">let</span> <span class="ident">scid</span> <span class="op">=</span> [<span class="number">0x7e</span>, <span class="number">0x37</span>, <span class="number">0xe4</span>, <span class="number">0xdc</span>, <span class="number">0xc6</span>, <span class="number">0x68</span>, <span class="number">0x2d</span>, <span class="number">0xa8</span>];
+<span class="kw">let</span> <span class="ident">dcid</span> <span class="op">=</span> [<span class="number">0x36</span>, <span class="number">0xce</span>, <span class="number">0x10</span>, <span class="number">0x4e</span>, <span class="number">0xee</span>, <span class="number">0x50</span>, <span class="number">0x10</span>, <span class="number">0x1c</span>];
+
+<span class="kw">let</span> <span class="ident">pkt_hdr</span> <span class="op">=</span> <span class="ident">qlog::events::quic::PacketHeader::with_type</span>(
+    <span class="ident">qlog::events::quic::PacketType::OneRtt</span>,
+    <span class="number">0</span>,
+    <span class="prelude-val">Some</span>(<span class="number">0x00000001</span>),
+    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">scid</span>),
+    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="ident">dcid</span>),
+);
+
+<span class="kw">let</span> <span class="ident">ping</span> <span class="op">=</span> <span class="ident">qlog::events::quic::QuicFrame::Ping</span>;
+<span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">qlog::events::quic::QuicFrame::Padding</span>;
+
+<span class="kw">let</span> <span class="ident">event_data</span> <span class="op">=</span>
+    <span class="ident">qlog::events::EventData::PacketSent</span>(<span class="ident">qlog::events::quic::PacketSent</span> {
+        <span class="ident">header</span>: <span class="ident">pkt_hdr</span>,
+        <span class="ident">frames</span>: <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[<span class="ident">ping</span>, <span class="ident">padding</span>]),
+        <span class="ident">is_coalesced</span>: <span class="prelude-val">None</span>,
+        <span class="ident">retry_token</span>: <span class="prelude-val">None</span>,
+        <span class="ident">stateless_reset_token</span>: <span class="prelude-val">None</span>,
+        <span class="ident">supported_versions</span>: <span class="prelude-val">None</span>,
+        <span class="ident">raw</span>: <span class="prelude-val">None</span>,
+        <span class="ident">datagram_id</span>: <span class="prelude-val">None</span>,
+        <span class="ident">trigger</span>: <span class="prelude-val">None</span>,
+    });
+
+<span class="kw">let</span> <span class="ident">event</span> <span class="op">=</span> <span class="ident">qlog::events::Event::with_time</span>(<span class="number">0.0</span>, <span class="ident">event_data</span>);
+
+<span class="ident">streamer</span>.<span class="ident">add_event</span>(<span class="ident">event</span>).<span class="ident">ok</span>();</code></pre></div>
+<p>Once all events have have been written, the log
+can be finalized with <a href="streamer/struct.QlogStreamer.html#method.finish_log"><code>finish_log()</code></a>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="ident">streamer</span>.<span class="ident">finish_log</span>().<span class="ident">ok</span>();</code></pre></div>
+<h4 id="serializing-1"><a href="#serializing-1">Serializing</a></h4>
+<p>Serialization to JSON occurs as methods on the <a href="struct.QlogStreamer.html"><code>QlogStreamer</code></a>
+are called. No additional steps are required.</p>
+</div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="events/index.html" title="qlog::events mod">events</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="streamer/index.html" title="qlog::streamer mod">streamer</a></div><div class="item-right docblock-short"></div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.CommonFields.html" title="qlog::CommonFields struct">CommonFields</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Configuration.html" title="qlog::Configuration struct">Configuration</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.HexSlice.html" title="qlog::HexSlice struct">HexSlice</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Qlog.html" title="qlog::Qlog struct">Qlog</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.QlogSeq.html" title="qlog::QlogSeq struct">QlogSeq</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Token.html" title="qlog::Token struct">Token</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Trace.html" title="qlog::Trace struct">Trace</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.TraceSeq.html" title="qlog::TraceSeq struct">TraceSeq</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.VantagePoint.html" title="qlog::VantagePoint struct">VantagePoint</a></div><div class="item-right docblock-short"></div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.Error.html" title="qlog::Error enum">Error</a></div><div class="item-right docblock-short"><p>A quiche qlog error.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.ImportanceLogLevel.html" title="qlog::ImportanceLogLevel enum">ImportanceLogLevel</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.TokenType.html" title="qlog::TokenType enum">TokenType</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.VantagePointType.html" title="qlog::VantagePointType enum">VantagePointType</a></div><div class="item-right docblock-short"></div></div></div><h2 id="constants" class="small-section-header"><a href="#constants">Constants</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="constant" href="constant.QLOG_VERSION.html" title="qlog::QLOG_VERSION constant">QLOG_VERSION</a></div><div class="item-right docblock-short"></div></div></div><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Bytes.html" title="qlog::Bytes type">Bytes</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Result.html" title="qlog::Result type">Result</a></div><div class="item-right docblock-short"><p>A specialized <a href="https://doc.rust-lang.org/std/result/enum.Result.html"><code>Result</code></a> type for quiche qlog operations.</p>
+</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="qlog" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (7425fb293 2022-06-30)" ></div>
+</body></html>
