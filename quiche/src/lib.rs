@@ -804,10 +804,7 @@ impl Config {
     ///
     /// Note that if support wasn't enabled at build time, this does nothing.
     pub fn compress_certificates(&mut self) -> Result<()> {
-        self.tls_ctx
-            .lock()
-            .unwrap()
-            .enable_certificate_compression()
+        self.tls_ctx.enable_certificate_compression()
     }
 
     /// Configures whether to verify the peer's certificate.

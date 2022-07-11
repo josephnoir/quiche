@@ -296,7 +296,7 @@ impl Context {
         #[cfg(any(feature = "brotlienc", feature = "brotlidec"))]
         map_result(unsafe {
             SSL_CTX_add_cert_compression_alg(
-                self.as_ptr(),
+                self.as_mut_ptr(),
                 2, // TLSEXT_cert_compression_brotli
                 #[cfg(feature = "brotlienc")]
                 Some(compress_brotli_cert),
@@ -783,14 +783,18 @@ extern fn set_read_secret(
     trace!("{} set read secret lvl={:?}", ex_data.trace_id, level);
 
     let space = match level {
-        crypto::Level::Initial =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_INITIAL],
-        crypto::Level::ZeroRTT =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION],
-        crypto::Level::Handshake =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_HANDSHAKE],
-        crypto::Level::OneRTT =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION],
+        crypto::Level::Initial => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_INITIAL]
+        },
+        crypto::Level::ZeroRTT => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION]
+        },
+        crypto::Level::Handshake => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_HANDSHAKE]
+        },
+        crypto::Level::OneRTT => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION]
+        },
     };
 
     let aead = match get_cipher_from_ptr(cipher) {
@@ -834,14 +838,18 @@ extern fn set_write_secret(
     trace!("{} set write secret lvl={:?}", ex_data.trace_id, level);
 
     let space = match level {
-        crypto::Level::Initial =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_INITIAL],
-        crypto::Level::ZeroRTT =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION],
-        crypto::Level::Handshake =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_HANDSHAKE],
-        crypto::Level::OneRTT =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION],
+        crypto::Level::Initial => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_INITIAL]
+        },
+        crypto::Level::ZeroRTT => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION]
+        },
+        crypto::Level::Handshake => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_HANDSHAKE]
+        },
+        crypto::Level::OneRTT => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION]
+        },
     };
 
     let aead = match get_cipher_from_ptr(cipher) {
@@ -886,13 +894,16 @@ extern fn add_handshake_data(
     let buf = unsafe { slice::from_raw_parts(data, len) };
 
     let space = match level {
-        crypto::Level::Initial =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_INITIAL],
+        crypto::Level::Initial => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_INITIAL]
+        },
         crypto::Level::ZeroRTT => unreachable!(),
-        crypto::Level::Handshake =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_HANDSHAKE],
-        crypto::Level::OneRTT =>
-            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION],
+        crypto::Level::Handshake => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_HANDSHAKE]
+        },
+        crypto::Level::OneRTT => {
+            &mut ex_data.pkt_num_spaces[packet::EPOCH_APPLICATION]
+        },
     };
 
     if space.crypto_stream.send.write(buf, false).is_err() {
@@ -980,8 +991,8 @@ extern fn select_alpn(
                 std::str::from_utf8(expected.as_slice())
             );
 
-            if expected.len() == proto.len() &&
-                expected.as_slice() == proto.as_ref()
+            if expected.len() == proto.len()
+                && expected.as_slice() == proto.as_ref()
             {
                 unsafe {
                     *out = expected.as_slice().as_ptr();
