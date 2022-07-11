@@ -1130,6 +1130,7 @@ extern fn decompress_brotli_cert(
 
     unsafe { *out = decompressed };
 
+    println!("decompressed cert from {} to {} bytes", in_len, out_len);
     return 1;
 }
 
