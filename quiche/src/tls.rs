@@ -45,6 +45,9 @@ use crate::ConnectionError;
 use crate::crypto;
 use crate::packet;
 
+#[cfg(feature = "certificate-compression")]
+use libz_sys::*;
+
 const TLS1_3_VERSION: u16 = 0x0304;
 const TLS_ALERT_ERROR: u64 = 0x100;
 
@@ -306,6 +309,16 @@ impl Context {
                 Some(decompress_brotli_cert),
                 #[cfg(not(feature = "brotlidec"))]
                 None,
+            )
+        })?;
+
+        #[cfg(any(feature = "certificate-compression"))]
+        map_result(unsafe {
+            SSL_CTX_add_cert_compression_alg(
+                self.as_mut_ptr(),
+                1, // TLSEXT_cert_compression_zlib
+                None,
+                Some(decompress_zlib_cert),
             )
         })?;
 
@@ -1130,7 +1143,43 @@ extern fn decompress_brotli_cert(
 
     unsafe { *out = decompressed };
 
-    println!("decompressed cert from {} to {} bytes", in_len, out_len);
+    println!(
+        "brotli decompressed cert from {} to {} bytes",
+        in_len, out_len
+    );
+    return 1;
+}
+
+#[cfg(feature = "certificate-compression")]
+extern fn decompress_zlib_cert(
+    _ssl: *mut SSL, out: *mut *mut CRYPTO_BUFFER, uncompressed_len: usize,
+    in_buf: *mut u8, compressed_len: usize,
+) -> c_int {
+    let mut out_buf: *mut u8 = std::ptr::null_mut();
+
+    let decompressed =
+        unsafe { CRYPTO_BUFFER_alloc(&mut out_buf, uncompressed_len) };
+
+    if decompressed.is_null() {
+        return 0;
+    }
+
+    let mut out_len = uncompressed_len as u64;
+    let in_len = compressed_len as u64;
+
+    let rc = unsafe { uncompress(out_buf, &mut out_len, in_buf, in_len) };
+
+    let uncompressed_len = uncompressed_len as u64;
+    if rc != 1 || out_len != uncompressed_len {
+        return 0;
+    }
+
+    unsafe { *out = decompressed };
+
+    println!(
+        "zlib decompressed cert from {} to {} bytes",
+        in_len, out_len
+    );
     return 1;
 }
 

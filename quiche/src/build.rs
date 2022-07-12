@@ -10,14 +10,20 @@ const CMAKE_PARAMS_ANDROID_NDK: &[(&str, &[(&str, &str)])] = &[
 
 // iOS.
 const CMAKE_PARAMS_IOS: &[(&str, &[(&str, &str)])] = &[
-    ("aarch64", &[
-        ("CMAKE_OSX_ARCHITECTURES", "arm64"),
-        ("CMAKE_OSX_SYSROOT", "iphoneos"),
-    ]),
-    ("x86_64", &[
-        ("CMAKE_OSX_ARCHITECTURES", "x86_64"),
-        ("CMAKE_OSX_SYSROOT", "iphonesimulator"),
-    ]),
+    (
+        "aarch64",
+        &[
+            ("CMAKE_OSX_ARCHITECTURES", "arm64"),
+            ("CMAKE_OSX_SYSROOT", "iphoneos"),
+        ],
+    ),
+    (
+        "x86_64",
+        &[
+            ("CMAKE_OSX_ARCHITECTURES", "x86_64"),
+            ("CMAKE_OSX_SYSROOT", "iphonesimulator"),
+        ],
+    ),
 ];
 
 // ARM Linux.
@@ -50,12 +56,13 @@ fn get_boringssl_platform_output_path() -> String {
 
         let subdir = match &opt_env_var[..] {
             "0" => "Debug",
-            "1" | "2" | "3" =>
+            "1" | "2" | "3" => {
                 if deb_info {
                     "RelWithDebInfo"
                 } else {
                     "Release"
-                },
+                }
+            },
             "s" | "z" => "MinSizeRel",
             unknown => panic!("Unknown OPT_LEVEL={} env var.", unknown),
         };
@@ -231,8 +238,8 @@ fn target_dir_path() -> std::path::PathBuf {
 }
 
 fn main() {
-    if cfg!(feature = "boringssl-vendored") &&
-        !cfg!(feature = "boringssl-boring-crate")
+    if cfg!(feature = "boringssl-vendored")
+        && !cfg!(feature = "boringssl-boring-crate")
     {
         let bssl_dir = std::env::var("QUICHE_BSSL_PATH").unwrap_or_else(|_| {
             let mut cfg = get_boringssl_cmake_config();
@@ -262,6 +269,7 @@ fn main() {
     {
         let pkgcfg = pkg_config::Config::new();
 
+        // Add brotli.
         if pkgcfg.probe("libbrotlienc").is_ok() {
             println!("cargo:rustc-cfg=feature=\"brotlienc\"");
         }
