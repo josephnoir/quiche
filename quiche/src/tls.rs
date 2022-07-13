@@ -48,6 +48,9 @@ use crate::packet;
 #[cfg(feature = "certificate-compression")]
 use libz_sys::*;
 
+#[cfg(feature = "certificate-compression")]
+use zstd_sys::*;
+
 const TLS1_3_VERSION: u16 = 0x0304;
 const TLS_ALERT_ERROR: u64 = 0x100;
 
@@ -296,6 +299,16 @@ impl Context {
     }
 
     pub fn enable_certificate_compression(&mut self) -> Result<()> {
+        #[cfg(any(feature = "certificate-compression"))]
+        map_result(unsafe {
+            SSL_CTX_add_cert_compression_alg(
+                self.as_mut_ptr(),
+                1, // TLSEXT_cert_compression_zlib
+                None,
+                Some(decompress_zlib_cert),
+            )
+        })?;
+
         #[cfg(any(feature = "brotlienc", feature = "brotlidec"))]
         map_result(unsafe {
             SSL_CTX_add_cert_compression_alg(
@@ -312,6 +325,20 @@ impl Context {
             )
         })?;
 
+        #[cfg(any(feature = "certificate-compression"))]
+        map_result(unsafe {
+            SSL_CTX_add_cert_compression_alg(
+                self.as_mut_ptr(),
+                3, // TLSEXT_cert_compression_zstd
+                None,
+                Some(decompress_zstd_cert),
+            )
+        })?;
+
+        Ok(())
+    }
+
+    pub fn enable_zlib_certificate_compression(&mut self) -> Result<()> {
         #[cfg(any(feature = "certificate-compression"))]
         map_result(unsafe {
             SSL_CTX_add_cert_compression_alg(
@@ -345,14 +372,14 @@ impl Context {
         Ok(())
     }
 
-    pub fn enable_zlib_certificate_compression(&mut self) -> Result<()> {
+    pub fn enable_zstd_certificate_compression(&mut self) -> Result<()> {
         #[cfg(any(feature = "certificate-compression"))]
         map_result(unsafe {
             SSL_CTX_add_cert_compression_alg(
                 self.as_mut_ptr(),
-                1, // TLSEXT_cert_compression_zlib
+                3, // TLSEXT_cert_compression_zlib
                 None,
-                Some(decompress_zlib_cert),
+                Some(decompress_zstd_cert),
             )
         })?;
 
@@ -1121,6 +1148,39 @@ extern fn new_session(ssl: *mut SSL, session: *mut SSL_SESSION) -> c_int {
     0
 }
 
+#[cfg(feature = "certificate-compression")]
+extern fn decompress_zlib_cert(
+    _ssl: *mut SSL, out: *mut *mut CRYPTO_BUFFER, uncompressed_len: usize,
+    in_buf: *mut u8, compressed_len: usize,
+) -> c_int {
+    let mut out_buf: *mut u8 = std::ptr::null_mut();
+
+    let decompressed =
+        unsafe { CRYPTO_BUFFER_alloc(&mut out_buf, uncompressed_len) };
+
+    if decompressed.is_null() {
+        return 0;
+    }
+
+    let mut out_len = uncompressed_len as u64;
+    let in_len = compressed_len as u64;
+
+    let rc = unsafe { uncompress(out_buf, &mut out_len, in_buf, in_len) };
+
+    let uncompressed_len = uncompressed_len as u64;
+    if rc != Z_OK || out_len != uncompressed_len {
+        return 0;
+    }
+
+    unsafe { *out = decompressed };
+
+    println!(
+        "zlib decompressed cert from {} to {} bytes",
+        in_len, out_len
+    );
+    return 1;
+}
+
 #[cfg(feature = "brotlienc")]
 extern fn compress_brotli_cert(
     _ssl: *mut SSL, out: *mut CBB, in_buf: *mut u8, in_len: usize,
@@ -1185,7 +1245,7 @@ extern fn decompress_brotli_cert(
 }
 
 #[cfg(feature = "certificate-compression")]
-extern fn decompress_zlib_cert(
+extern fn decompress_zstd_cert(
     _ssl: *mut SSL, out: *mut *mut CRYPTO_BUFFER, uncompressed_len: usize,
     in_buf: *mut u8, compressed_len: usize,
 ) -> c_int {
@@ -1198,21 +1258,21 @@ extern fn decompress_zlib_cert(
         return 0;
     }
 
-    let mut out_len = uncompressed_len as u64;
-    let in_len = compressed_len as u64;
+    let out_void: *mut c_void = out_buf as *mut c_void;
+    let in_void: *const c_void = in_buf as *const c_void;
+    let rc = unsafe {
+        ZSTD_decompress(out_void, uncompressed_len, in_void, compressed_len)
+    };
 
-    let rc = unsafe { uncompress(out_buf, &mut out_len, in_buf, in_len) };
-
-    let uncompressed_len = uncompressed_len as u64;
-    if rc != Z_OK || out_len != uncompressed_len {
+    if unsafe { ZSTD_isError(rc) } > 0 || rc != uncompressed_len {
         return 0;
     }
 
     unsafe { *out = decompressed };
 
     println!(
-        "zlib decompressed cert from {} to {} bytes",
-        in_len, out_len
+        "zstd decompressed cert from {} to {} bytes",
+        compressed_len, rc
     );
     return 1;
 }

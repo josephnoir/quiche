@@ -104,6 +104,7 @@ pub fn connect(
     match args.compression_algo.as_deref() {
         Some("zlib") => config.compress_certificates_zlib().unwrap(),
         Some("brotli") => config.compress_certificates_brotli().unwrap(),
+        Some("zstd") => config.compress_certificates_zstd().unwrap(),
         Some("all") => config.compress_certificates().unwrap(),
         Some(algo) => panic!("invalid compression algorithm: {}", algo),
         _ => config.compress_certificates().unwrap(),

@@ -807,6 +807,13 @@ impl Config {
         self.tls_ctx.enable_certificate_compression()
     }
 
+    /// Enables support for zlib certificate compression (RFC8879).
+    ///
+    /// Note that if support wasn't enabled at build time, this does nothing.
+    pub fn compress_certificates_zlib(&mut self) -> Result<()> {
+        self.tls_ctx.enable_zlib_certificate_compression()
+    }
+
     /// Enables support for brotli certificate compression (RFC8879).
     ///
     /// Note that if support wasn't enabled at build time, this does nothing.
@@ -814,11 +821,11 @@ impl Config {
         self.tls_ctx.enable_brotli_certificate_compression()
     }
 
-    /// Enables support for zlib certificate compression (RFC8879).
+    /// Enables support for zstd certificate compression (RFC8879).
     ///
     /// Note that if support wasn't enabled at build time, this does nothing.
-    pub fn compress_certificates_zlib(&mut self) -> Result<()> {
-        self.tls_ctx.enable_zlib_certificate_compression()
+    pub fn compress_certificates_zstd(&mut self) -> Result<()> {
+        self.tls_ctx.enable_zstd_certificate_compression()
     }
 
     /// Configures whether to verify the peer's certificate.
