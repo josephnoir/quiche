@@ -1174,10 +1174,11 @@ extern fn decompress_zlib_cert(
 
     unsafe { *out = decompressed };
 
-    println!(
-        "zlib decompressed cert from {} to {} bytes",
-        in_len, out_len
-    );
+    println!("++|zlib|{}|{}", in_len, out_len);
+    // println!(
+    //     "zlib decompressed cert from {} to {} bytes",
+    //     in_len, out_len
+    // );
     return 1;
 }
 
@@ -1237,10 +1238,11 @@ extern fn decompress_brotli_cert(
 
     unsafe { *out = decompressed };
 
-    println!(
-        "brotli decompressed cert from {} to {} bytes",
-        in_len, out_len
-    );
+    println!("++|brotli|{}|{}", in_len, out_len);
+    // println!(
+    //     "brotli decompressed cert from {} to {} bytes",
+    //     in_len, out_len
+    // );
     return 1;
 }
 
@@ -1270,10 +1272,11 @@ extern fn decompress_zstd_cert(
 
     unsafe { *out = decompressed };
 
-    println!(
-        "zstd decompressed cert from {} to {} bytes",
-        compressed_len, rc
-    );
+    println!("++|zstd|{}|{}", compressed_len, rc);
+    // println!(
+    //     "zstd decompressed cert from {} to {} bytes",
+    //     compressed_len, rc
+    // );
     return 1;
 }
 
