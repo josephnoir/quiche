@@ -282,7 +282,7 @@ Options:
   --qpack-blocked-streams STREAMS   Limit of blocked streams while decoding. Any value other that 0 is currently unsupported.
   --session-file PATH      File used to cache a TLS session for resumption.
   --source-port PORT       Source port to use when connecting to the server [default: 0].
-  --comp-algo NAME         Select specfic algorithm for cert compression. Acceptable values are brotli and zlib. [default: all]
+  --comp-algo NAME         Select specfic algorithm for cert compression. Acceptable values are zlib, brotli, and zstd. [default: all]
   -h --help                Show this screen.
 ";
 
