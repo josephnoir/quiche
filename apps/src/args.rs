@@ -89,8 +89,9 @@ impl Args for CommonArgs {
         let (alpns, dgrams_enabled) = match (http_version, dgram_proto) {
             ("HTTP/0.9", "none") => (alpns::HTTP_09.to_vec(), false),
 
-            ("HTTP/0.9", _) =>
-                panic!("Unsupported HTTP version and DATAGRAM protocol."),
+            ("HTTP/0.9", _) => {
+                panic!("Unsupported HTTP version and DATAGRAM protocol.")
+            },
 
             ("HTTP/3", "none") => (alpns::HTTP_3.to_vec(), false),
 
@@ -281,6 +282,7 @@ Options:
   --qpack-blocked-streams STREAMS   Limit of blocked streams while decoding. Any value other that 0 is currently unsupported.
   --session-file PATH      File used to cache a TLS session for resumption.
   --source-port PORT       Source port to use when connecting to the server [default: 0].
+  --comp-algo NAME         Select specfic algorithm for cert compression. Acceptable values are brotli and zlib. [default: all]
   -h --help                Show this screen.
 ";
 
@@ -300,6 +302,7 @@ pub struct ClientArgs {
     pub source_port: u16,
     pub perform_migration: bool,
     pub send_priority_update: bool,
+    pub compression_algo: Option<String>,
 }
 
 impl Args for ClientArgs {
@@ -370,6 +373,12 @@ impl Args for ClientArgs {
 
         let send_priority_update = args.get_bool("--send-priority-update");
 
+        let compression_algo = if args.get_str("--comp-algo") != "" {
+            Some(args.get_str("--comp-algo").to_string())
+        } else {
+            None
+        };
+
         ClientArgs {
             version,
             dump_response_path,
@@ -385,6 +394,7 @@ impl Args for ClientArgs {
             source_port,
             perform_migration,
             send_priority_update,
+            compression_algo,
         }
     }
 }
@@ -406,6 +416,7 @@ impl Default for ClientArgs {
             source_port: 0,
             perform_migration: false,
             send_priority_update: false,
+            compression_algo: None,
         }
     }
 }

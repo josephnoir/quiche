@@ -101,7 +101,12 @@ pub fn connect(
     // Create the configuration for the QUIC connection.
     let mut config = quiche::Config::new(args.version).unwrap();
 
-    config.compress_certificates().unwrap();
+    match args.compression_algo.as_deref() {
+        Some("zlib") => config.compress_certificates_zlib().unwrap(),
+        Some("brotli") => config.compress_certificates_brotli().unwrap(),
+        Some(algo) => panic!("invalid compression algorithm: {}", algo),
+        _ => config.compress_certificates().unwrap(),
+    }
 
     config.verify_peer(!args.no_verify);
 
@@ -351,9 +356,9 @@ pub fn connect(
 
         // Create a new application protocol session once the QUIC connection is
         // established.
-        if (conn.is_established() || conn.is_in_early_data()) &&
-            (!args.perform_migration || migrated) &&
-            !app_proto_selected
+        if (conn.is_established() || conn.is_in_early_data())
+            && (!args.perform_migration || migrated)
+            && !app_proto_selected
         {
             // At this stage the ALPN negotiation succeeded and selected a
             // single application protocol name. We'll use this to construct
@@ -484,10 +489,10 @@ pub fn connect(
             scid_sent = true;
         }
 
-        if args.perform_migration &&
-            !new_path_probed &&
-            scid_sent &&
-            conn.available_dcids() > 0
+        if args.perform_migration
+            && !new_path_probed
+            && scid_sent
+            && conn.available_dcids() > 0
         {
             let additional_local_addr =
                 migrate_socket.as_ref().unwrap().local_addr().unwrap();

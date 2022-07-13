@@ -325,6 +325,40 @@ impl Context {
         Ok(())
     }
 
+    pub fn enable_brotli_certificate_compression(&mut self) -> Result<()> {
+        #[cfg(any(feature = "brotlienc", feature = "brotlidec"))]
+        map_result(unsafe {
+            SSL_CTX_add_cert_compression_alg(
+                self.as_mut_ptr(),
+                2, // TLSEXT_cert_compression_brotli
+                #[cfg(feature = "brotlienc")]
+                Some(compress_brotli_cert),
+                #[cfg(not(feature = "brotlienc"))]
+                None,
+                #[cfg(feature = "brotlidec")]
+                Some(decompress_brotli_cert),
+                #[cfg(not(feature = "brotlidec"))]
+                None,
+            )
+        })?;
+
+        Ok(())
+    }
+
+    pub fn enable_zlib_certificate_compression(&mut self) -> Result<()> {
+        #[cfg(any(feature = "certificate-compression"))]
+        map_result(unsafe {
+            SSL_CTX_add_cert_compression_alg(
+                self.as_mut_ptr(),
+                1, // TLSEXT_cert_compression_zlib
+                None,
+                Some(decompress_zlib_cert),
+            )
+        })?;
+
+        Ok(())
+    }
+
     pub fn enable_keylog(&mut self) {
         unsafe {
             SSL_CTX_set_keylog_callback(self.as_mut_ptr(), keylog);
