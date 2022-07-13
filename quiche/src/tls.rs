@@ -1170,7 +1170,7 @@ extern fn decompress_zlib_cert(
     let rc = unsafe { uncompress(out_buf, &mut out_len, in_buf, in_len) };
 
     let uncompressed_len = uncompressed_len as u64;
-    if rc != 1 || out_len != uncompressed_len {
+    if rc != Z_OK || out_len != uncompressed_len {
         return 0;
     }
 
