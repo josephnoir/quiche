@@ -283,6 +283,7 @@ Options:
   --session-file PATH      File used to cache a TLS session for resumption.
   --source-port PORT       Source port to use when connecting to the server [default: 0].
   --comp-algo NAME         Select specfic algorithm for cert compression. Acceptable values are zlib, brotli, and zstd. [default: all]
+  --print-io               Print number of bytes that are read and written.
   -h --help                Show this screen.
 ";
 
@@ -303,6 +304,7 @@ pub struct ClientArgs {
     pub perform_migration: bool,
     pub send_priority_update: bool,
     pub compression_algo: Option<String>,
+    pub print_io: bool,
 }
 
 impl Args for ClientArgs {
@@ -379,6 +381,8 @@ impl Args for ClientArgs {
             None
         };
 
+        let print_io = args.get_bool("--print-io");
+
         ClientArgs {
             version,
             dump_response_path,
@@ -395,6 +399,7 @@ impl Args for ClientArgs {
             perform_migration,
             send_priority_update,
             compression_algo,
+            print_io,
         }
     }
 }
@@ -417,6 +422,7 @@ impl Default for ClientArgs {
             perform_migration: false,
             send_priority_update: false,
             compression_algo: None,
+            print_io: false,
         }
     }
 }

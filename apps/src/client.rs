@@ -237,6 +237,9 @@ pub fn connect(
     }
 
     trace!("written {}", write);
+    if args.print_io {
+        println!("wrote {}", write);
+    }
 
     let app_data_start = std::time::Instant::now();
 
@@ -292,6 +295,9 @@ pub fn connect(
                 };
 
                 trace!("{}: got {} bytes", local_addr, len);
+                if args.print_io {
+                    println!("read {}", len);
+                }
 
                 if let Some(target_path) = conn_args.dump_packet_path.as_ref() {
                     let path = format!("{}/{}.pkt", target_path, pkt_count);
@@ -391,6 +397,9 @@ pub fn connect(
                     None
                 };
 
+                let dropit = |_| {};
+                let void_sink =
+                    Rc::new(RefCell::new(dropit)) as Rc<RefCell<dyn FnMut(_)>>;
                 http_conn = Some(Http3Conn::with_urls(
                     &mut conn,
                     &args.urls,
@@ -404,7 +413,7 @@ pub fn connect(
                     conn_args.qpack_blocked_streams,
                     args.dump_json,
                     dgram_sender,
-                    Rc::clone(&output_sink),
+                    Rc::clone(&void_sink),
                 ));
 
                 app_proto_selected = true;
@@ -564,6 +573,9 @@ pub fn connect(
                         send_info.to,
                         write
                     );
+                    if args.print_io {
+                        println!("wrote {}", write);
+                    }
                 }
             }
         }
